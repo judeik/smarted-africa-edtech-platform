@@ -1,14 +1,14 @@
 # SmartEd Africa — Final Verification Report
 
 **Date:** 2026-06-07  
-**Branch:** `main` (initial commit)  
+**Branch:** `main`  
 **Auditor:** Claude Sonnet 4.6 (automated)
 
 ---
 
 ## Executive Summary
 
-All critical systems pass. 14 issues were discovered and fixed during this audit. The repository is production-ready pending secret injection and Playwright browser installation.
+All critical systems pass. **16 issues** were discovered and fixed during this audit. The repository is production-ready pending secret injection.
 
 ---
 
@@ -28,7 +28,8 @@ All critical systems pass. 14 issues were discovered and fixed during this audit
 | Unused dependencies | ✅ FIXED | `react-router-dom` removed from frontend |
 | Missing env vars | ✅ DOCUMENTED | Full `.env.example` covers all required variables |
 | Production blockers | ✅ NONE | See Known Gaps |
-| Playwright E2E | ⚠️ DEFERRED | Browser binaries must be downloaded on each fresh clone |
+| Playwright E2E (Chromium) | ✅ PASS | 28/28 tests pass |
+| Playwright E2E (WebKit) | ✅ PASS | 28/28 tests pass (webkit downloaded separately) |
 
 ---
 
@@ -77,7 +78,23 @@ The `.eslintignore` file is not supported in ESLint v9 flat config mode and gene
 
 The legacy `frontend/.eslintrc.json` was present alongside the active `eslint.config.js`. ESLint v9 ignores the legacy file, but its presence caused `depcheck` to report five packages as "missing" (false positives) because they were referenced there but not installed. File removed.
 
-### 6. `react-router-dom` — Unused Dependency
+### 6. `authStore.login()` — Global Loading State Hid Auth Modal
+
+**Severity:** High — caused a runtime UX regression detectable via E2E  
+**File:** `frontend/src/store/authStore.ts`
+
+`authStore.login()` was setting `isLoading: true` before the API call. App.tsx uses `isLoading` to show a full-page loading screen (`return <LoadingSpinner />`) which unmounts the entire component tree, including the auth modal. This meant the dialog disappeared for the duration of the login API call, then reappeared after — causing a jarring flash and a timing-dependent Playwright failure.
+
+`AuthModal` already has its own `isSubmitting` local state for button loading. The global `isLoading` flag is only needed for the initial `checkAuth()` call. Removed `isLoading` mutation from `login()`.
+
+### 7. Desktop Navbar Missing "Sign Up" Button
+
+**Severity:** Medium — signup flow inaccessible via keyboard/desktop nav  
+**File:** `frontend/src/components/navigation/Navbar.tsx`
+
+The desktop Navbar only rendered a "Login" button when the user was unauthenticated. The "Sign Up" button existed only in the mobile hamburger menu. This meant desktop users had no visible path to registration (they'd have to click Login and switch to Sign Up inside the modal). Added a "Sign Up" button alongside "Login" in the desktop nav.
+
+### 8. `react-router-dom` — Unused Dependency
 
 `react-router-dom` was in `frontend/package.json` but is completely unused — the app uses custom state-based navigation (`currentPage` state + conditional rendering, as documented in `CLAUDE.md`). Removed via `npm uninstall react-router-dom` (saves ~17 KB from bundle).
 
@@ -213,9 +230,7 @@ The tests are written correctly and the dev server launches via `webServer` conf
 
 2. **Empty `vendor` chunk** — Vite emits `Generated an empty chunk: "vendor"` during build. The manual chunk split in `vite.config.js` targets packages that were optimized away. Cosmetic; does not affect functionality.
 
-3. **Playwright browsers require installation** — `npx playwright install` must be run after `npm install` on each fresh environment. This is standard Playwright behavior; add it to the project README's "Getting Started" section if not already there.
-
-4. **`quizzes` list endpoint absent** — There is a `GET /api/v1/quizzes/:id` and `POST /api/v1/quizzes` but no `GET /api/v1/quizzes` list endpoint. The frontend `StudentDashboard` loads quizzes via enrollment data, so this is not a gap today; document if a standalone quiz browser is ever added.
+3. **`quizzes` list endpoint absent** — There is a `GET /api/v1/quizzes/:id` and `POST /api/v1/quizzes` but no `GET /api/v1/quizzes` list endpoint. The frontend `StudentDashboard` loads quizzes via enrollment data, so this is not a gap today; document if a standalone quiz browser is ever added.
 
 ---
 
@@ -227,10 +242,13 @@ The tests are written correctly and the dev server launches via `webServer` conf
 | ESLint warnings | 4 | **0** |
 | TypeScript errors | 0 | **0** |
 | Backend tests | 20/20 | **20/20** |
+| E2E tests (Chromium) | 25/28 (3 failing) | **28/28** |
+| E2E tests (WebKit) | 0/28 (browser missing) | **28/28** |
 | Docker warnings | 1 | **0** |
 | Unused dependencies | 1 | **0** |
 | Legacy config conflicts | 2 | **0** |
 | Security vulnerabilities | 0 | **0** |
 | Dead routes | 0 | **0** |
+| UX regressions | 2 (login flash, no signup nav) | **0** |
 
-**Production readiness: READY** pending environment variable injection and `npx playwright install`.
+**Production readiness: READY** pending environment variable injection.
