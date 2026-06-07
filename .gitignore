@@ -1,0 +1,52 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+frontend/dist/
+frontend/.vite/
+backend/dist/
+*.tsbuildinfo
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Test / Coverage ───────────────────────────────────────────────────────────
+coverage/
+backend/coverage/
+playwright-report/
+test-results/
+
+# ── OS files ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Editor ────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Python ────────────────────────────────────────────────────────────────────
+AI-ML/__pycache__/
+AI-ML/*.pyc
+AI-ML/.venv/
+AI-ML/venv/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+.claude/
+screenshots/
+*.local

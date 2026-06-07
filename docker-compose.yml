@@ -1,0 +1,110 @@
+version: '3.9'
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-smarted}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-smartedpass}
+      MONGO_INITDB_DATABASE: smarted
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://${MONGO_USER:-smarted}:${MONGO_PASSWORD:-smartedpass}@mongodb:27017/smarted?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRES: 15m
+      REFRESH_SECRET: ${REFRESH_SECRET}
+      CORS_ORIGIN: ${FRONTEND_URL:-http://localhost:80}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:80}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      EMAIL_FROM: ${EMAIL_FROM:-no-reply@smarted.africa}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
+      PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:5000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ai-service:
+    build:
+      context: ./AI-ML
+    restart: unless-stopped
+    ports:
+      - '8001:8001'
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:80,http://localhost:5173}
+      SESSION_TTL_SECONDS: 1800
+      MAX_HISTORY_TURNS: 20
+      BACKEND_URL: http://backend:5000
+      MONTHLY_TOKEN_CAP: ${MONTHLY_TOKEN_CAP:-50000}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api/v1}
+        VITE_AI_URL: ${VITE_AI_URL:-http://localhost:8001}
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      - backend
+      - ai-service
+
+volumes:
+  mongo_data:
+  redis_data:
