@@ -13,7 +13,8 @@ const required = (key) => {
 const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '5000', 10),
-  dbUri: process.env.MONGO_URI || 'mongodb://localhost:27017/smarted_dev',
+  // Accept both MONGO_URI (docker-compose / local) and MONGODB_URI (Atlas / Railway)
+  dbUri: process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/smarted_dev',
 
   jwtSecret: required('JWT_SECRET') || 'dev_jwt_secret_CHANGE_IN_PRODUCTION',
   jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES || '15m',
@@ -41,6 +42,8 @@ const env = {
   redisHost: process.env.REDIS_HOST || 'localhost',
   redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
   redisPassword: process.env.REDIS_PASSWORD || undefined,
+  // Set REDIS_TLS=true for Upstash / any TLS-only Redis (e.g. Railway Redis add-on)
+  redisTLS: process.env.REDIS_TLS === 'true',
 };
 
 export default env;
