@@ -1,14 +1,10 @@
 """
-SmartEd Africa AI Tutor Service v2.1
-- Streaming SSE responses
-- Session-based conversation context (in-memory, TTL)
-- CORS, rate limiting, prompt injection protection
-- AI usage metering (reports to backend)
-- Monthly token caps per user
+SmartEd Africa AI Tutor Service v3.0
+Migrated from OpenAI gpt-4o-mini → Anthropic claude-haiku-4-5
 """
 
-from openai import AsyncOpenAI
-from fastapi import FastAPI, HTTPException, Request
+from anthropic import AsyncAnthropic
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, field_validator
@@ -28,15 +24,16 @@ load_dotenv()
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise RuntimeError("OPENAI_API_KEY environment variable is required")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+if not ANTHROPIC_API_KEY:
+    raise RuntimeError("ANTHROPIC_API_KEY environment variable is required")
 
 ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:80").split(",")
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "1800"))
 MAX_HISTORY_TURNS = int(os.getenv("MAX_HISTORY_TURNS", "20"))
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:5000")
-MONTHLY_TOKEN_CAP = int(os.getenv("MONTHLY_TOKEN_CAP", "50000"))  # per user
+MONTHLY_TOKEN_CAP = int(os.getenv("MONTHLY_TOKEN_CAP", "50000"))
+MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5-20251001")
 
 INJECTION_PATTERNS = [
     "ignore previous", "ignore all instructions", "disregard your",
@@ -48,7 +45,7 @@ INJECTION_PATTERNS = [
 # ── App Setup ─────────────────────────────────────────────────────────────────
 
 limiter = Limiter(key_func=get_remote_address)
-app = FastAPI(title="SmartEd AI Tutor", version="2.1.0")
+app = FastAPI(title="SmartEd AI Tutor", version="3.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -60,7 +57,7 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],
 )
 
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
+client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
 
 # ── Session Store ─────────────────────────────────────────────────────────────
 
@@ -97,9 +94,11 @@ class SessionStore:
     def cleanup_expired(self):
         with self._lock:
             now = time.time()
-            expired = [k for k, v in self._sessions.items() if now - v["last_access"] > SESSION_TTL_SECONDS]
+            expired = [k for k, v in self._sessions.items()
+                       if now - v["last_access"] > SESSION_TTL_SECONDS]
             for k in expired:
                 del self._sessions[k]
+
 
 sessions = SessionStore()
 
@@ -152,82 +151,77 @@ LANGUAGE_NAMES = {
     "fr": "French", "pt": "Portuguese", "sw": "Swahili", "am": "Amharic",
 }
 
-def build_messages(session_id: str, user_text: str, language: str) -> list:
+
+def build_request(session_id: str, user_text: str, language: str):
+    """Return (system_prompt, messages) for Anthropic API call."""
     history = sessions.get(session_id) if session_id else []
     lang_name = LANGUAGE_NAMES.get(language, "English")
     system = SYSTEM_PROMPT
     if language != "en":
         system += f"\n\nIMPORTANT: Respond in {lang_name} for this session."
-    messages = [{"role": "system", "content": system}]
-    messages.extend(history)
-    messages.append({"role": "user", "content": user_text})
-    return messages
+    messages = list(history) + [{"role": "user", "content": user_text}]
+    return system, messages
+
 
 async def report_usage(session_id: str, user_id: str | None, language: str,
-                       prompt_tokens: int, completion_tokens: int):
-    """Report token usage to backend for metering/billing."""
+                       input_tokens: int, output_tokens: int):
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client_http:
-            await client_http.post(
+        async with httpx.AsyncClient(timeout=5.0) as http:
+            await http.post(
                 f"{BACKEND_URL}/api/v1/analytics/ai-usage",
                 json={
                     "sessionId": session_id,
                     "userId": user_id,
                     "language": language,
-                    "promptTokens": prompt_tokens,
-                    "completionTokens": completion_tokens,
-                    "model": "gpt-4o-mini",
+                    "promptTokens": input_tokens,
+                    "completionTokens": output_tokens,
+                    "model": MODEL,
                 },
             )
     except Exception:
-        pass  # Usage metering is non-critical; don't fail the request
+        pass  # metering is non-critical
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "smarted-ai", "version": "2.1.0", "timestamp": time.time()}
+    return {"status": "ok", "service": "smarted-ai", "version": "3.0.0",
+            "model": MODEL, "timestamp": time.time()}
 
 
 @app.post("/ask")
 @limiter.limit("30/minute")
 async def ask(request: Request, body: AskRequest):
     session_id = body.session_id or str(uuid.uuid4())
-    messages = build_messages(session_id, body.text, body.language)
+    system, messages = build_request(session_id, body.text, body.language)
 
     if body.stream:
         async def event_stream():
             full_response = ""
-            prompt_tokens = 0
-            completion_tokens = 0
+            input_tokens = 0
+            output_tokens = 0
             try:
-                stream = await client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=messages,
-                    stream=True,
+                async with client.messages.stream(
+                    model=MODEL,
                     max_tokens=1024,
-                    temperature=0.7,
-                    stream_options={"include_usage": True},
-                )
-                async for chunk in stream:
-                    delta = chunk.choices[0].delta if chunk.choices else None
-                    if delta and delta.content:
-                        full_response += delta.content
-                        yield f"data: {json.dumps({'token': delta.content, 'session_id': session_id})}\n\n"
-                    # Capture usage from the final chunk
-                    if hasattr(chunk, 'usage') and chunk.usage:
-                        prompt_tokens = chunk.usage.prompt_tokens or 0
-                        completion_tokens = chunk.usage.completion_tokens or 0
+                    system=system,
+                    messages=messages,
+                ) as stream:
+                    async for text in stream.text_stream:
+                        full_response += text
+                        yield f"data: {json.dumps({'token': text, 'session_id': session_id})}\n\n"
+
+                    final = await stream.get_final_message()
+                    input_tokens = final.usage.input_tokens
+                    output_tokens = final.usage.output_tokens
 
                 sessions.append(session_id, "user", body.text)
                 sessions.append(session_id, "assistant", full_response)
-
-                # Report usage asynchronously
                 asyncio.create_task(
-                    report_usage(session_id, body.user_id, body.language, prompt_tokens, completion_tokens)
+                    report_usage(session_id, body.user_id, body.language,
+                                 input_tokens, output_tokens)
                 )
-
-                yield f"data: {json.dumps({'done': True, 'session_id': session_id, 'tokens': prompt_tokens + completion_tokens})}\n\n"
+                yield f"data: {json.dumps({'done': True, 'session_id': session_id, 'tokens': input_tokens + output_tokens})}\n\n"
 
             except Exception as e:
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
@@ -235,34 +229,27 @@ async def ask(request: Request, body: AskRequest):
         return StreamingResponse(
             event_stream(),
             media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-                "X-Session-Id": session_id,
-            },
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no",
+                     "X-Session-Id": session_id},
         )
     else:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
+        message = await client.messages.create(
+            model=MODEL,
             max_tokens=1024,
-            temperature=0.7,
+            system=system,
+            messages=messages,
         )
-        answer = response.choices[0].message.content
-        usage = response.usage
+        answer = message.content[0].text
+        input_tokens = message.usage.input_tokens
+        output_tokens = message.usage.output_tokens
+
         sessions.append(session_id, "user", body.text)
         sessions.append(session_id, "assistant", answer)
-
         asyncio.create_task(
-            report_usage(session_id, body.user_id, body.language,
-                         usage.prompt_tokens, usage.completion_tokens)
+            report_usage(session_id, body.user_id, body.language, input_tokens, output_tokens)
         )
-
-        return {
-            "answer": answer,
-            "session_id": session_id,
-            "tokens": usage.total_tokens,
-        }
+        return {"answer": answer, "session_id": session_id,
+                "tokens": input_tokens + output_tokens}
 
 
 @app.delete("/session/{session_id}")
@@ -282,4 +269,4 @@ async def startup():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8001)))

@@ -102,8 +102,10 @@ services:
         value: "2"           # increase to 4 on paid plan with more RAM
 
       # ── Secrets ──────────────────────────────────────────────────────────────
-      - key: OPENAI_API_KEY
-        sync: false          # sk-...
+      - key: ANTHROPIC_API_KEY
+        sync: false          # sk-ant-... (Anthropic Pro key)
+      - key: ANTHROPIC_MODEL
+        value: "claude-haiku-4-5-20251001"  # upgrade to claude-sonnet-4-6 for harder questions
       - key: CORS_ORIGINS
         sync: false          # https://your-app.vercel.app (fill after Vercel deploy)
       - key: BACKEND_URL
