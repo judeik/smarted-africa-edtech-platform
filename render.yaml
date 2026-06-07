@@ -88,6 +88,10 @@ services:
     healthCheckPath: /health
 
     envVars:
+      # PORT must be explicit — Render routes traffic to this port.
+      # Gunicorn CMD uses ${PORT:-8001}, HEALTHCHECK uses same.
+      - key: PORT
+        value: "8001"
       - key: SESSION_TTL_SECONDS
         value: "1800"
       - key: MAX_HISTORY_TURNS

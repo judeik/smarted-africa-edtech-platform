@@ -6,11 +6,15 @@ import { makeToken, saveToken, getUserIdForToken, revokeToken } from '../service
 import { sendEmail } from '../services/emailService.js';
 import env from '../config/env.js';
 
+const isProd = process.env.NODE_ENV === 'production';
+
+// sameSite:'None' is required when frontend (Vercel) and backend (Render) are on
+// different domains. 'None' requires secure:true (HTTPS-only).
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'Strict',
-  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  secure: isProd,
+  sameSite: isProd ? 'None' : 'Strict',
+  maxAge: 30 * 24 * 60 * 60 * 1000,
   path: '/',
 };
 
@@ -191,7 +195,7 @@ export const logout = async (req, res, next) => {
   try {
     const token = req.cookies.refreshToken;
     if (token) await revokeRefreshToken(token);
-    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'Strict', path: '/' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: isProd, sameSite: isProd ? 'None' : 'Strict', path: '/' });
     return res.json({ success: true, message: 'Logged out.' });
   } catch (err) {
     next(err);
