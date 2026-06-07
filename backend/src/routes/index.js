@@ -12,6 +12,7 @@ import paymentRoutes from './paymentRoutes.js';
 import enrollmentRoutes from './enrollmentRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import aiRoutes from './aiRoutes.js';
 
 // ----------------------------
 // Initialize Router
@@ -36,6 +37,7 @@ router.use('/payments', paymentRoutes);
 router.use('/enrollments', enrollmentRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
+router.use('/ai', aiRoutes);
 
 // ----------------------------
 // Export Router

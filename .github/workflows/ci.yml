@@ -78,7 +78,6 @@ jobs:
         run: npm run build
         env:
           VITE_API_URL: http://localhost:5000/api/v1
-          VITE_AI_URL: http://localhost:8001
           VITE_SENTRY_DSN: ''
 
       - name: Upload build artifact
@@ -90,28 +89,6 @@ jobs:
 
       - name: Security audit
         run: npm audit --audit-level=high
-
-  ai-service-check:
-    name: AI Service — Lint
-    runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: AI-ML
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Lint
-        run: pip install ruff && ruff check . --ignore E501
 
   e2e-tests:
     name: E2E Tests (Playwright)
@@ -141,7 +118,6 @@ jobs:
         run: npx playwright test e2e/landing.spec.ts e2e/auth.spec.ts e2e/ai-chat.spec.ts e2e/accessibility.spec.ts
         env:
           VITE_API_URL: http://localhost:5000/api/v1
-          VITE_AI_URL: http://localhost:8001
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
@@ -163,12 +139,8 @@ jobs:
       - name: Build backend
         run: docker build -t smarted-backend:ci ./backend
 
-      - name: Build AI service
-        run: docker build -t smarted-ai:ci ./AI-ML
-
       - name: Build frontend
         run: |
           docker build \
             --build-arg VITE_API_URL=http://localhost:5000/api/v1 \
-            --build-arg VITE_AI_URL=http://localhost:8001 \
             -t smarted-frontend:ci ./frontend

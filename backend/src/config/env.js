@@ -39,6 +39,12 @@ const env = {
 
   sentryDsn: process.env.SENTRY_DSN,
 
+  // ── AI (Anthropic) ──────────────────────────────────────────────────────────
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+  anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
+  aiSessionTtl: parseInt(process.env.AI_SESSION_TTL || '1800', 10),
+  aiMaxHistoryTurns: parseInt(process.env.AI_MAX_HISTORY_TURNS || '20', 10),
+
   redisHost: process.env.REDIS_HOST || 'localhost',
   redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
   redisPassword: process.env.REDIS_PASSWORD || undefined,

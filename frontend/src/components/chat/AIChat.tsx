@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, Send, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import { translations } from '../../utils/translations';
 
-const AI_URL = import.meta.env.VITE_AI_URL || 'http://localhost:8001';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1');
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English', yo: 'Yoruba', ha: 'Hausa', ig: 'Igbo',
@@ -61,7 +61,7 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose, currentLanguage }) => 
   const handleClearHistory = async () => {
     if (sessionId) {
       try {
-        await fetch(`${AI_URL}/session/${sessionId}`, { method: 'DELETE' });
+        await fetch(`${API_BASE}/ai/session/${sessionId}`, { method: 'DELETE' });
       } catch { /* ignore */ }
     }
     setSessionId(null);
@@ -86,11 +86,11 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose, currentLanguage }) => 
     abortRef.current = new AbortController();
 
     try {
-      const res = await fetch(`${AI_URL}/ask`, {
+      const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text,
+          message: text,
           session_id: sessionId,
           language: currentLanguage,
           stream: true,

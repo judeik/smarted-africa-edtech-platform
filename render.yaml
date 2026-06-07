@@ -1,33 +1,29 @@
 # Render Blueprint — SmartEd Africa
-# docs: https://render.com/docs/blueprint-spec
+# Single service: Node.js backend with AI merged in (free tier)
 #
 # USAGE:
-#   1. Connect this repo on render.com/dashboard → New → Blueprint
-#   2. Render will create both services and prompt for values marked sync:false
-#   3. Fill every sync:false variable before the first deploy goes live
+#   render.com/dashboard → New → Blueprint → select this repo → branch: main
 #
-# SECRET VARIABLES (sync:false) are NOT stored here — set them in the dashboard.
-# NON-SECRET variables (value:) are stored here and auto-deployed on git push.
+# SECRET VARIABLES (sync:false) are NOT stored here.
+# Set them in the Render dashboard when prompted.
 
 services:
-
-  # ── Backend API (Node.js + Express) ─────────────────────────────────────────
   - type: web
     name: smarted-backend
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    region: frankfurt        # closest to West Africa; change to oregon for US
-    plan: starter            # $7/mo — free tier spins down after 15 min inactivity
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+    region: oregon
+    plan: free
     branch: main
     autoDeploy: true
     healthCheckPath: /api/health
 
     envVars:
+      # ── Non-secret (stored here, auto-deployed) ─────────────────────────────
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: "5000"
       - key: JWT_ACCESS_EXPIRES
         value: 15m
       - key: SMTP_HOST
@@ -36,77 +32,47 @@ services:
         value: "587"
       - key: EMAIL_FROM
         value: no-reply@smarted.africa
-      - key: SESSION_TTL_SECONDS
-        value: "1800"
-
-      # ── Secrets (set manually in Render dashboard) ───────────────────────────
-      - key: MONGODB_URI
-        sync: false          # MongoDB Atlas connection string
-      - key: REDIS_HOST
-        sync: false          # Upstash endpoint (above-tiger-xxx.upstash.io)
       - key: REDIS_PORT
         value: "6379"
-      - key: REDIS_PASSWORD
-        sync: false          # Upstash token
       - key: REDIS_TLS
-        value: "true"        # Required for Upstash
-      - key: JWT_SECRET
-        sync: false          # 64-byte hex — generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-      - key: REFRESH_SECRET
-        sync: false          # 64-byte hex — different from JWT_SECRET
-      - key: SMTP_USER
-        sync: false          # smartedafrica01@gmail.com
-      - key: SMTP_PASS
-        sync: false          # Gmail 16-char app password
-      - key: PAYSTACK_SECRET_KEY
-        sync: false          # sk_live_... or sk_test_...
-      - key: PAYSTACK_PUBLIC_KEY
-        sync: false          # pk_live_... or pk_test_...
-      - key: FRONTEND_URL
-        sync: false          # https://your-app.vercel.app  (fill after Vercel deploy)
-      - key: CORS_ORIGIN
-        sync: false          # same as FRONTEND_URL
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false          # optional — leave blank to use placeholder images
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: SENTRY_DSN
-        sync: false          # optional
-
-  # ── AI Tutor Service (Python + FastAPI + gunicorn) ───────────────────────────
-  - type: web
-    name: smarted-ai
-    runtime: docker
-    dockerfilePath: ./AI-ML/Dockerfile
-    dockerContext: ./AI-ML
-    region: frankfurt
-    plan: starter
-    branch: main
-    autoDeploy: true
-    healthCheckPath: /health
-
-    envVars:
-      # PORT must be explicit — Render routes traffic to this port.
-      # Gunicorn CMD uses ${PORT:-8001}, HEALTHCHECK uses same.
-      - key: PORT
-        value: "8001"
-      - key: SESSION_TTL_SECONDS
-        value: "1800"
-      - key: MAX_HISTORY_TURNS
-        value: "20"
-      - key: MONTHLY_TOKEN_CAP
-        value: "50000"
-      - key: GUNICORN_WORKERS
-        value: "2"           # increase to 4 on paid plan with more RAM
-
-      # ── Secrets ──────────────────────────────────────────────────────────────
-      - key: ANTHROPIC_API_KEY
-        sync: false          # sk-ant-... (Anthropic Pro key)
+        value: "true"
       - key: ANTHROPIC_MODEL
-        value: "claude-haiku-4-5-20251001"  # upgrade to claude-sonnet-4-6 for harder questions
-      - key: CORS_ORIGINS
-        sync: false          # https://your-app.vercel.app (fill after Vercel deploy)
-      - key: BACKEND_URL
-        sync: false          # https://smarted-backend.onrender.com (fill after backend deploys)
+        value: claude-haiku-4-5-20251001
+      - key: AI_SESSION_TTL
+        value: "1800"
+      - key: AI_MAX_HISTORY_TURNS
+        value: "20"
+
+      # ── Secrets (set in Render dashboard — never stored here) ────────────────
+      - key: MONGODB_URI
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: REFRESH_SECRET
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false   # set to Vercel domain after frontend deploys
+      - key: CORS_ORIGIN
+        sync: false   # same as FRONTEND_URL
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false   # optional
+      - key: CLOUDINARY_API_KEY
+        sync: false   # optional
+      - key: CLOUDINARY_API_SECRET
+        sync: false   # optional
+      - key: SENTRY_DSN
+        sync: false   # optional

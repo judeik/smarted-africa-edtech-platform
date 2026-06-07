@@ -61,6 +61,8 @@ services:
       EMAIL_FROM: ${EMAIL_FROM:-no-reply@smarted.africa}
       PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY}
       PAYSTACK_PUBLIC_KEY: ${PAYSTACK_PUBLIC_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
       CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
@@ -71,37 +73,16 @@ services:
       timeout: 10s
       retries: 3
 
-  ai-service:
-    build:
-      context: ./AI-ML
-    restart: unless-stopped
-    ports:
-      - '8001:8001'
-    environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:80,http://localhost:5173}
-      SESSION_TTL_SECONDS: 1800
-      MAX_HISTORY_TURNS: 20
-      BACKEND_URL: http://backend:5000
-      MONTHLY_TOKEN_CAP: ${MONTHLY_TOKEN_CAP:-50000}
-    healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:8001/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   frontend:
     build:
       context: ./frontend
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:5000/api/v1}
-        VITE_AI_URL: ${VITE_AI_URL:-http://localhost:8001}
     restart: unless-stopped
     ports:
       - '80:80'
     depends_on:
       - backend
-      - ai-service
 
 volumes:
   mongo_data:

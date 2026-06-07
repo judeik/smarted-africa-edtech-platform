@@ -1,5 +1,4 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-const AI_URL = import.meta.env.VITE_AI_URL || 'http://localhost:8001';
 
 type RequestOptions = {
   method?: string;
@@ -277,14 +276,11 @@ export const adminApi = {
 // ── AI Chat ───────────────────────────────────────────────────────────────────
 
 export const aiApi = {
-  ask: async (text: string): Promise<string> => {
-    const res = await fetch(`${AI_URL}/ask`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-    if (!res.ok) throw new Error('AI service unavailable');
-    const data = await res.json();
-    return data.answer as string;
+  ask: async (message: string, sessionId?: string, language = 'en'): Promise<{ answer: string; session_id: string }> => {
+    const data = await request<{ success: boolean; answer: string; session_id: string }>(
+      `${BASE_URL}/ai/chat`,
+      { method: 'POST', body: { message, session_id: sessionId, language, stream: false } },
+    );
+    return { answer: data.answer, session_id: data.session_id };
   },
 };
