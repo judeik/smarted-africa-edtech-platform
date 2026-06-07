@@ -12,7 +12,7 @@ USER aiml
 
 EXPOSE 8001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-  CMD wget -qO- http://localhost:8001/health || exit 1
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8001/health', timeout=5)" || exit 1
 # gunicorn with uvicorn workers: multi-process for concurrent request handling.
 # WORKERS default 2; override with GUNICORN_WORKERS env var in Railway dashboard.
 CMD ["sh", "-c", "gunicorn openai_api:app -k uvicorn.workers.UvicornWorker -w ${GUNICORN_WORKERS:-2} -b 0.0.0.0:8001 --timeout 120 --graceful-timeout 30 --access-logfile -"]

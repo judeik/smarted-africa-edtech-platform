@@ -33,11 +33,12 @@ const startServer = async () => {
           process.exit(1);
         }
       });
-      // Force-exit if drain takes too long (Railway SIGKILL window is ~10s)
+      // Force-exit if drain takes too long.
+      // Render gives 30s; Railway gives ~10s. 25s is safe for both.
       setTimeout(() => {
         console.error("Graceful shutdown timeout — forcing exit");
         process.exit(1);
-      }, 9000).unref();
+      }, 25000).unref();
     };
 
     process.on("SIGTERM", () => shutdown("SIGTERM"));
