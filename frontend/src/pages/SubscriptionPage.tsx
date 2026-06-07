@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, User, Clock, Star, RotateCcw } from 'lucide-react';
+import { User, Clock, Star, RotateCcw } from 'lucide-react';
 import CaptchaComponent from '../components/auth/CaptchaComponent';
 import { Course } from './CoursesPage';
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  BookOpen, Calendar, Trophy, TrendingUp, MessageSquare, Settings,
-  Bell, Menu, X, Star, CheckCircle, Clock, Download, Play,
-  BarChart3, Users, Award, Target, Brain, Loader2, RefreshCw,
+  BookOpen, Trophy, TrendingUp, MessageSquare, Settings,
+  Bell, Menu, X, CheckCircle, Download, Play,
+  BarChart3, Users, Target, Brain, Loader2, RefreshCw,
 } from 'lucide-react';
 import { enrollmentApi, EnrolledCourse, DashboardStats, ApiError } from '../lib/api';
 import AnalyticsDashboard from '../components/analytics/AnalyticsDashboard';

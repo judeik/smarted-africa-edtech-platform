@@ -5,7 +5,7 @@ interface PartnerLogoProps {
   logo: string;
 }
 
-const PartnerLogo: React.FC<PartnerLogoProps> = ({ name, logo }) => (
+const PartnerLogo: React.FC<PartnerLogoProps> = ({ logo }) => (
   <div className="flex items-center justify-center p-4 bg-white rounded-lg shadow-sm border border-gray-100">
     <div className="text-2xl font-bold text-gray-800">{logo}</div>
   </div>

@@ -9,11 +9,10 @@ interface ReviewModalProps {
   courseTitle: string;
 }
 
-const ReviewModal: React.FC<ReviewModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  courseId, 
-  courseTitle 
+const ReviewModal: React.FC<ReviewModalProps> = ({
+  isOpen,
+  onClose,
+  courseTitle
 }) => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -51,7 +50,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         setCaptchaSolved(false);
         setGlobalSuccess('');
       }, 3000);
-    } catch (error) {
+    } catch {
       setGlobalError('Failed to submit review. Please try again.');
     } finally {
       setIsSubmitting(false);

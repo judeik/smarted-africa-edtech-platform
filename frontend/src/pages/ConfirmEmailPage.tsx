@@ -31,7 +31,7 @@ const ConfirmEmailPage: React.FC<ConfirmEmailPageProps> = ({ token, onSetPasswor
       setMessage(err instanceof ApiError ? err.message : 'Invalid or expired confirmation link.');
     });
     return () => { cancelled = true; };
-  }, [token]);
+  }, [token, onSetPassword]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 flex items-center justify-center p-4">

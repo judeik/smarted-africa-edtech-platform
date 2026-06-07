@@ -130,7 +130,6 @@ const CoursesPage: React.FC<CoursesPageProps> = ({ currentLanguage, onSubscribe,
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
   const [usingFallback, setUsingFallback] = useState(false);
 
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
@@ -141,7 +140,6 @@ const CoursesPage: React.FC<CoursesPageProps> = ({ currentLanguage, onSubscribe,
 
   const loadCourses = useCallback(async () => {
     setIsLoading(true);
-    setError('');
     try {
       const params: Record<string, string | number> = { page: 1, limit: 50 };
       if (selectedExamType !== 'All') params.examType = selectedExamType;
@@ -158,7 +156,6 @@ const CoursesPage: React.FC<CoursesPageProps> = ({ currentLanguage, onSubscribe,
     } catch {
       setCourses(FALLBACK_COURSES);
       setUsingFallback(true);
-      setError('Using sample courses — connect the backend to see live content.');
     } finally {
       setIsLoading(false);
     }

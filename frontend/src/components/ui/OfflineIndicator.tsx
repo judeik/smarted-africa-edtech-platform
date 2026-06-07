@@ -3,7 +3,7 @@ import { WifiOff, Wifi, RefreshCw, HardDrive } from 'lucide-react';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 
 const OfflineIndicator: React.FC = () => {
-  const { isOnline, syncing, lastSyncedAt, storageInfo, syncQueue } = useOfflineSync();
+  const { isOnline, syncing, storageInfo, syncQueue } = useOfflineSync();
 
   if (isOnline && storageInfo.queuedAttempts === 0) return null;
 

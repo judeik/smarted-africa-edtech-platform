@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Users, BookOpen, TrendingUp, DollarSign, Activity, Shield,
-  Search, Ban, CheckCircle, XCircle, Eye, EyeOff, BarChart3,
-  AlertCircle, Loader2, RefreshCw, LogOut, Brain, ChevronDown
+  Search, Ban, CheckCircle, Eye, EyeOff, BarChart3,
+  AlertCircle, Loader2, RefreshCw, LogOut, Brain
 } from 'lucide-react';
 import { adminApi, analyticsApi, ApiError } from '../lib/api';
 
@@ -117,7 +117,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     if (activeTab === 'users') loadUsers(userSearch);
     else if (activeTab === 'courses') loadCourses();
     else if (activeTab === 'analytics' || activeTab === 'ai-usage') loadAnalytics();
-  }, [activeTab]);
+  }, [activeTab, loadUsers, loadCourses, loadAnalytics, userSearch]);
 
   const handleUserAction = async (userId: string, action: 'disable' | 'confirm') => {
     setActionLoading(`${action}-${userId}`);

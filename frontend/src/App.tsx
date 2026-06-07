@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/navigation/Navbar';
 import LandingPage from './pages/LandingPage';
 import CoursesPage from './pages/CoursesPage';
@@ -13,7 +13,6 @@ import AIChat from './components/chat/AIChat';
 import AuthModal from './components/auth/AuthModal';
 import ReviewModal from './components/reviews/ReviewModal';
 import OfflineIndicator from './components/ui/OfflineIndicator';
-import { translations as _translations } from './utils/translations';
 import { Course } from './pages/CoursesPage';
 import { useAuthStore } from './store/authStore';
 
@@ -68,7 +67,7 @@ const App: React.FC = () => {
         setCurrentPage(state.user.role === 'admin' ? 'AdminDashboard' : 'StudentDashboard');
       }
     });
-  }, [checkAuth]);
+  }, [checkAuth, currentPage]);
 
   // Browser language detection
   useEffect(() => {
@@ -78,6 +77,18 @@ const App: React.FC = () => {
       setDetectedLanguage(browserLang);
       setShowAutoTranslatePopup(true);
     }
+  }, []);
+
+  const handleConfirmSetPassword = useCallback(() => {
+    setCurrentPage('landing');
+    setAuthType('signup');
+    setIsAuthModalOpen(true);
+  }, []);
+
+  const handleConfirmGoToLogin = useCallback(() => {
+    setCurrentPage('landing');
+    setIsAuthModalOpen(true);
+    setAuthType('login');
   }, []);
 
   const handleAuthClick = (type: 'login' | 'signup') => {
@@ -124,16 +135,8 @@ const App: React.FC = () => {
     return (
       <ConfirmEmailPage
         token={confirmToken}
-        onSetPassword={() => {
-          setCurrentPage('landing');
-          setAuthType('signup');
-          setIsAuthModalOpen(true);
-        }}
-        onGoToLogin={() => {
-          setCurrentPage('landing');
-          setIsAuthModalOpen(true);
-          setAuthType('login');
-        }}
+        onSetPassword={handleConfirmSetPassword}
+        onGoToLogin={handleConfirmGoToLogin}
       />
     );
   }

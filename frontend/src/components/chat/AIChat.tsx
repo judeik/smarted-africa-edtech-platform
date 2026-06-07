@@ -41,6 +41,8 @@ const AIChat: React.FC<AIChatProps> = ({ isOpen, onClose, currentLanguage }) => 
         sender: 'ai',
       }]);
     }
+  // messages.length intentionally omitted — re-running on every message would duplicate welcome
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {

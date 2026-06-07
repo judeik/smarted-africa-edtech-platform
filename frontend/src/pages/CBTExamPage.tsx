@@ -12,14 +12,6 @@ interface Question {
   subject?: string;
 }
 
-interface Quiz {
-  _id: string;
-  title: string;
-  examType: string;
-  timeLimitMinutes: number;
-  questions: Question[];
-}
-
 interface CBTExamPageProps {
   quizId: string;
   quizTitle?: string;
@@ -42,14 +34,13 @@ export interface ExamResult {
 type ExamPhase = 'briefing' | 'exam' | 'review';
 
 const CBTExamPage: React.FC<CBTExamPageProps> = ({
-  quizId, quizTitle, questions, timeLimitMinutes, examType = 'General', onComplete, onBack
+  quizTitle, questions, timeLimitMinutes, examType = 'General', onComplete, onBack
 }) => {
   const [phase, setPhase] = useState<ExamPhase>('briefing');
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>(new Array(questions.length).fill(-1));
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [timeLeft, setTimeLeft] = useState(timeLimitMinutes * 60);
-  const [startTime, setStartTime] = useState(0);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -98,7 +89,6 @@ const CBTExamPage: React.FC<CBTExamPageProps> = ({
   }, [phase, submitExam]);
 
   const startExam = () => {
-    setStartTime(Date.now());
     setPhase('exam');
   };
 
