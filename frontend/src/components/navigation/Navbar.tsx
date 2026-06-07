@@ -117,12 +117,20 @@ const Navbar = ({
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => onAuthClick('login')}
-                className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-2 rounded-full font-medium hover:from-green-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
-              >
-                {getTranslation('login', 'Login')}
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => onAuthClick('signup')}
+                  className="border-2 border-green-600 text-green-600 px-5 py-2 rounded-full font-medium hover:bg-green-50 transition-all"
+                >
+                  {getTranslation('signup', 'Sign Up')}
+                </button>
+                <button
+                  onClick={() => onAuthClick('login')}
+                  className="bg-gradient-to-r from-green-600 to-teal-600 text-white px-6 py-2 rounded-full font-medium hover:from-green-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl"
+                >
+                  {getTranslation('login', 'Login')}
+                </button>
+              </div>
             )}
           </div>
 

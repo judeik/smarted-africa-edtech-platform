@@ -21,15 +21,11 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
 
       login: async (email, password) => {
-        set({ isLoading: true });
-        try {
-          const data = await authApi.login(email, password);
-          localStorage.setItem('smarted_access_token', data.accessToken);
-          set({ user: data.user, isAuthenticated: true, isLoading: false });
-        } catch (err) {
-          set({ isLoading: false });
-          throw err;
-        }
+        // Don't set global isLoading — AuthModal manages its own isSubmitting state.
+        // Setting it here causes App to unmount the modal during the API call.
+        const data = await authApi.login(email, password);
+        localStorage.setItem('smarted_access_token', data.accessToken);
+        set({ user: data.user, isAuthenticated: true });
       },
 
       logout: async () => {
