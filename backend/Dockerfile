@@ -5,24 +5,18 @@ FROM base AS deps
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-FROM base AS dev-deps
-COPY package*.json ./
-RUN npm ci
-
-FROM base AS build
-COPY --from=dev-deps /app/node_modules ./node_modules
-COPY . .
-
 FROM base AS production
 ENV NODE_ENV=production
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/src ./src
-COPY --from=build /app/server.js ./server.js
-COPY --from=build /app/package.json ./package.json
+COPY package.json ./
+COPY server.js ./
+COPY src/ ./src/
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
 USER nodejs
 
 EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:5000/api/health || exit 1
 CMD ["node", "server.js"]

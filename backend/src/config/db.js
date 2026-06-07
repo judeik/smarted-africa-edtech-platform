@@ -24,7 +24,10 @@ const connectDB = async (retries = 5, delay = 5000) => {
     }
 
     const conn = await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 5000, // Stop trying after 5s
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 20,        // handles up to 20 concurrent queries
+      minPoolSize: 2,         // keep 2 connections warm
+      socketTimeoutMS: 45000, // close idle sockets after 45s
     });
 
     console.log(

@@ -18,7 +18,7 @@ const env = {
 
   jwtSecret: required('JWT_SECRET') || 'dev_jwt_secret_CHANGE_IN_PRODUCTION',
   jwtAccessExpires: process.env.JWT_ACCESS_EXPIRES || '15m',
-  refreshSecret: process.env.REFRESH_SECRET || 'dev_refresh_secret_CHANGE_IN_PRODUCTION',
+  refreshSecret: required('REFRESH_SECRET') || 'dev_refresh_secret_CHANGE_IN_PRODUCTION',
 
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
 

@@ -1,40 +1,51 @@
 // @ts-nocheck
 // backend/server.js
-// ----------------------------
-// Backend Entry Point (Production-Ready)
-// ----------------------------
 
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import connectDB from "./src/config/db.js";
-import app from "./src/app.js"; // Import your production-ready app
+import app from "./src/app.js";
 
-// ----------------------------
-// Load environment variables
-// ----------------------------
 dotenv.config();
 
-// ----------------------------
-// Dynamic Port and Environment
-// ----------------------------
 const PORT = parseInt(process.env.PORT, 10) || 5000;
 const NODE_ENV = process.env.NODE_ENV || "development";
 
-// ----------------------------
-// Start Server after DB Connection
-// ----------------------------
 const startServer = async () => {
   try {
-    // Connect to MongoDB
     await connectDB();
-    console.log("MongoDB connected successfully");
 
-    // Start Express server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} in ${NODE_ENV} mode`);
     });
+
+    // Graceful shutdown: drain in-flight requests before closing DB.
+    // Railway (and k8s) send SIGTERM then SIGKILL after ~10s.
+    const shutdown = async (signal) => {
+      console.log(`${signal} received — shutting down gracefully`);
+      server.close(async () => {
+        try {
+          await mongoose.connection.close();
+          console.log("MongoDB connection closed");
+          process.exit(0);
+        } catch (err) {
+          console.error("Error during shutdown:", err.message);
+          process.exit(1);
+        }
+      });
+      // Force-exit if drain takes too long (Railway SIGKILL window is ~10s)
+      setTimeout(() => {
+        console.error("Graceful shutdown timeout — forcing exit");
+        process.exit(1);
+      }, 9000).unref();
+    };
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+
   } catch (error) {
-    console.error("Failed to connect to MongoDB:", error.message);
-    process.exit(1); // Exit process with failure
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
   }
 };
 
